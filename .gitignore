@@ -12,7 +12,3 @@ venv/
 
 # VS Code settings
 .vscode/
-
-# Imagens de teste (se tiver alguma solta na pasta)
-*.jpg
-*.png
