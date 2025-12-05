@@ -132,6 +132,6 @@ Exemplo utilizando uma imagem de referência de uma "Cabana". O algoritmo identi
 
 **Samuel Santos** *Geoprocessamento | Data Science | Edificações.*
 
-[](https://samuel-c-santos.github.io/)
-[](https://www.linkedin.com/in/samuelsantos-amb/)
-[](https://github.com/samuel-c-santos)
+[![Portfolio](https://img.shields.io/badge/Portfolio-Ver_Projetos-2ea44f?style=flat-square&logo=google-chrome&logoColor=white)](https://samuel-c-santos.github.io/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Conectar-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/samuelsantos-amb/)
+[![GitHub](https://img.shields.io/badge/GitHub-Ver_Código-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/samuel-c-santos)
