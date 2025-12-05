@@ -1,0 +1,18 @@
+# Python caches
+__pycache__/
+*.pyc
+
+# Ambiente Virtual (se você criou um)
+venv/
+.env
+
+# Arquivos gerados pelo ArchiSearch (não subir índices, pois são locais)
+*.index
+*.npy
+
+# VS Code settings
+.vscode/
+
+# Imagens de teste (se tiver alguma solta na pasta)
+*.jpg
+*.png

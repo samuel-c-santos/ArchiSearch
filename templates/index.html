@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArchiSearch - Busca Semântica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Paleta de cores baseada no seu logo */
+            --color-primary: #15803d;   /* Verde Esmeralda Escuro */
+            --color-secondary: #0c5928; /* Verde para hover */
+            --color-light: #dcfce7;     /* Verde claro fundo */
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f4f7f9; 
+        }
+        .loading-animation {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--color-primary); 
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Classes utilitárias para usar variáveis CSS no Tailwind */
+        .bg-primary { background-color: var(--color-primary); }
+        .hover\:bg-secondary:hover { background-color: var(--color-secondary); }
+        .text-primary { color: var(--color-primary); }
+        .border-primary { border-color: var(--color-primary); }
+        .border-light { border-color: var(--color-light); }
+        .bg-light { background-color: var(--color-light); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl">
+        <div class="flex items-center mb-6">
+            <img src="{{ url_for('static', filename='logo_verde.jpg') }}" 
+                 alt="Logo Edificações" 
+                 class="h-12 w-12 object-contain mr-4 rounded-lg shadow-md border border-gray-100">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-800">
+                    <span class="text-primary">Archi</span>Search
+                </h1>
+                <p class="text-gray-500 text-sm">Busca Semântica | Edificações</p>
+            </div>
+        </div>
+
+        <div id="status-bar" class="p-3 mb-6 rounded-lg flex items-center justify-between transition-colors duration-300 border-l-4 border-light">
+            </div>
+
+        <div class="space-y-6">
+            <div>
+                <label for="text-query" class="block text-sm font-medium text-gray-700 mb-2">
+                    Buscar por descrição (Ex: "fachada moderna com vidro e madeira"):
+                </label>
+                <input type="text" id="text-query" placeholder="Descreva o que você procura..."
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+            </div>
+
+            <div class="text-center text-gray-400 font-semibold text-sm">
+                — OU —
+            </div>
+
+            <div>
+                <label for="image-upload" class="block text-sm font-medium text-gray-700 mb-2">
+                    Buscar por similaridade visual (Upload de referência):
+                </label>
+                <input type="file" id="image-upload" accept="image/*"
+                       class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-light file:text-primary hover:file:bg-green-100 transition duration-150">
+                <p id="image-preview-area" class="mt-2 text-sm text-gray-500 hidden"></p>
+            </div>
+
+            <button id="search-button"
+                    class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-primary text-white font-bold rounded-lg hover:bg-secondary transition duration-200 shadow-md shadow-green-200 disabled:bg-gray-400"
+                    onclick="handleSearch()">
+                <svg id="search-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <div id="button-text">Buscar Imagens Similares</div>
+                <div id="loading-indicator" class="hidden loading-animation"></div>
+            </button>
+        </div>
+
+        <div class="mt-12">
+            <h2 id="results-title" class="text-xl font-semibold text-gray-800 mb-4 hidden">Resultados Encontrados:</h2>
+            
+            <div id="results-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                </div>
+
+            <div id="load-more-container" class="mt-8 text-center hidden">
+                <button id="load-more-btn" onclick="renderBatch()" 
+                        class="px-6 py-2 bg-white border border-gray-300 text-gray-600 font-semibold rounded-full shadow-sm hover:bg-gray-50 hover:text-primary hover:border-primary transition duration-200">
+                    Ver Mais Resultados
+                </button>
+            </div>
+
+            <p id="no-results-message" class="text-center text-gray-500 mt-8">
+                O índice está carregado. Digite uma consulta ou envie uma imagem para começar.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Elementos UI Globais
+        const statusContainer = document.getElementById('status-bar');
+        const textQueryInput = document.getElementById('text-query');
+        const imageUploadInput = document.getElementById('image-upload');
+        const searchButton = document.getElementById('search-button');
+        const resultsGrid = document.getElementById('results-grid');
+        const resultsTitle = document.getElementById('results-title');
+        const noResultsMessage = document.getElementById('no-results-message');
+        const imagePreviewArea = document.getElementById('image-preview-area');
+        const loadMoreContainer = document.getElementById('load-more-container');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+
+        let isSearching = false;
+
+        // --- Variáveis de Paginação ---
+        let allResults = [];
+        let shownCount = 0;
+        const BATCH_SIZE = 4; // Mostra 4 imagens por vez
+
+        // --- Funções Auxiliares de UI ---
+
+        function setLoading(isLoading, elementId = 'search-button') {
+            isSearching = isLoading;
+            const element = document.getElementById(elementId);
+            const textElement = element.querySelector('#button-text') || element.querySelector('.index-text');
+            const loadingElement = element.querySelector('.loading-animation');
+
+            if (elementId === 'search-button') {
+                element.disabled = isLoading;
+                loadingElement.classList.toggle('hidden', !isLoading);
+                textElement.textContent = isLoading ? 'Analisando...' : 'Buscar Imagens Similares';
+            } else { 
+                element.disabled = isLoading;
+                loadingElement.classList.toggle('hidden', !isLoading);
+                textElement.textContent = isLoading ? 'Indexando...' : 'Indexar Agora';
+            }
+        }
+        
+        function displayMessage(message, type = 'info') {
+            const colors = {
+                'success': 'bg-light border-l-4 border-primary text-primary',
+                'error': 'bg-red-100 border-l-4 border-red-500 text-red-700',
+                'info': 'bg-blue-100 border-l-4 border-blue-500 text-blue-700',
+            };
+            resultsGrid.className = 'space-y-4'; // Remove grid para mensagem
+            resultsGrid.innerHTML = `
+                <div class="${colors[type]} p-4 rounded-lg" role="alert">
+                    <p class="font-bold">${type === 'error' ? 'Erro' : type === 'success' ? 'Sucesso' : 'Aviso'}</p>
+                    <p>${message}</p>
+                </div>
+            `;
+            resultsTitle.classList.add('hidden');
+            noResultsMessage.classList.add('hidden');
+            loadMoreContainer.classList.add('hidden');
+        }
+
+        // --- Função para Abrir Pasta (Chama Backend) ---
+        async function openFolder(filePath) {
+            try {
+                // Efeito visual no botão clicado
+                const btn = event.currentTarget;
+                const icon = btn.querySelector('svg');
+                const originalText = btn.innerHTML;
+                
+                // Feedback visual simples
+                btn.classList.add('bg-green-100', 'text-primary');
+                
+                await fetch('/open-folder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: filePath })
+                });
+
+                // Remove feedback após 500ms
+                setTimeout(() => {
+                    btn.classList.remove('bg-green-100', 'text-primary');
+                }, 500);
+
+            } catch (error) {
+                console.error("Erro ao abrir pasta:", error);
+                alert("Não foi possível abrir a pasta. Verifique se o servidor está rodando.");
+            }
+        }
+
+        // --- Lógica de Renderização (Paginação) ---
+
+        function renderBatch() {
+            const nextBatch = allResults.slice(shownCount, shownCount + BATCH_SIZE);
+            
+            nextBatch.forEach((result, index) => {
+                const globalIndex = shownCount + index + 1;
+                const pathParts = result.path.split(/[\\\/]/);
+                const filename = pathParts[pathParts.length - 1];
+                
+                // Imagem (usa o Base64 enviado pelo Python)
+                let imageElement = '';
+                if (result.image) {
+                    imageElement = `<img src="${result.image}" alt="${filename}" class="w-full h-64 object-cover rounded-t-lg border-b border-gray-100 group-hover:opacity-95 transition">`;
+                } else {
+                    imageElement = `<div class="w-full h-64 bg-gray-100 flex items-center justify-center text-gray-400 rounded-t-lg">Sem Prévia</div>`;
+                }
+
+                // Caminho tratado para o Javascript (escape de backslash)
+                const safePath = result.path.replace(/\\/g, '\\\\');
+
+                const cardHtml = `
+                    <div class="group bg-white shadow-lg rounded-lg hover:shadow-2xl transition duration-300 flex flex-col border border-gray-100 relative">
+                        ${imageElement}
+                        
+                        <div class="p-4 flex flex-col flex-grow">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-gray-800 text-sm truncate w-3/4" title="${filename}">
+                                    ${globalIndex}. ${filename}
+                                </h3>
+                                <span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">
+                                    ${(result.similarity * 100).toFixed(0)}%
+                                </span>
+                            </div>
+                            
+                            <div class="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
+                                <p class="text-xs text-gray-400 truncate w-2/3" title="${result.path}">
+                                    ...\\${pathParts.slice(-2).join('\\')}
+                                </p>
+                                
+                                <button onclick="openFolder('${safePath}')" 
+                                        class="flex items-center gap-1 text-xs bg-gray-50 border border-gray-200 text-gray-600 px-3 py-1.5 rounded hover:bg-primary hover:text-white hover:border-primary transition duration-200 shadow-sm"
+                                        title="Abrir pasta no Windows Explorer">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
+                                    Pasta
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultsGrid.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            shownCount += nextBatch.length;
+
+            // Gerencia botão Ver Mais
+            if (shownCount >= allResults.length) {
+                loadMoreContainer.classList.add('hidden');
+            } else {
+                loadMoreContainer.classList.remove('hidden');
+                loadMoreBtn.innerText = `Ver Mais Resultados (${allResults.length - shownCount} restantes)`;
+            }
+        }
+
+        function displayResults(results) {
+            resultsGrid.innerHTML = '';
+            allResults = results;
+            shownCount = 0;
+            
+            if (results.length === 0) {
+                noResultsMessage.textContent = 'Nenhum resultado relevante encontrado.';
+                resultsTitle.classList.add('hidden');
+                noResultsMessage.classList.remove('hidden');
+                loadMoreContainer.classList.add('hidden');
+                resultsGrid.className = 'space-y-4';
+                return;
+            }
+
+            // Ativa o Grid e Títulos
+            resultsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+            resultsTitle.classList.remove('hidden');
+            noResultsMessage.classList.add('hidden');
+            
+            renderBatch(); // Renderiza o primeiro lote
+        }
+
+        function updateStatusBar(status, totalItems) {
+            let className = '';
+            let content = '';
+            
+            if (status === 'OK') {
+                className = 'bg-light border-primary';
+                content = `
+                    <div class="flex items-center">
+                        <span class="flex h-3 w-3 relative mr-3">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                        <div>
+                            <p class="text-primary font-bold text-sm">Sistema Pronto</p>
+                            <p class="text-primary text-xs">${totalItems} Imagens Indexadas.</p>
+                        </div>
+                    </div>
+                `;
+                searchButton.disabled = false;
+            } else {
+                className = 'bg-yellow-50 border-yellow-500';
+                content = `
+                    <div class="flex items-center">
+                         <svg class="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <p class="text-yellow-800 font-semibold text-sm">Indexação Necessária</p>
+                    </div>
+                    <button id="index-button" onclick="handleIndex()" class="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white font-bold text-sm rounded hover:bg-yellow-700 transition duration-200 shadow-sm disabled:bg-gray-400">
+                        <div class="index-text">Indexar Agora</div>
+                        <div class="loading-animation hidden border-white border-t-yellow-600"></div>
+                    </button>
+                `;
+                searchButton.disabled = true;
+                noResultsMessage.textContent = 'O sistema não pode buscar antes de indexar suas imagens. Clique em "Indexar Agora".';
+                resultsTitle.classList.add('hidden');
+            }
+            statusContainer.className = `p-3 mb-6 rounded-lg flex items-center justify-between transition-colors duration-300 border-l-4 ${className}`;
+            statusContainer.innerHTML = content;
+        }
+
+        // --- Funções de API e Utilitários ---
+
+        function fileToDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        async function handleIndex() {
+            setLoading(true, 'index-button');
+            displayMessage('Iniciando indexação... Isso pode levar alguns minutos.', 'info');
+            try {
+                const response = await fetch('/indexar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const result = await response.json();
+                if (result.success) {
+                    displayMessage(result.message, 'success');
+                    // Pequeno delay para ler a mensagem antes de recarregar
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    displayMessage(result.message, 'error');
+                    setLoading(false, 'index-button');
+                }
+            } catch (error) {
+                displayMessage(`Erro de comunicação: ${error.message}`, 'error');
+                setLoading(false, 'index-button');
+            }
+        }
+
+        async function handleSearch() {
+            if (isSearching || searchButton.disabled) return;
+
+            const textQuery = textQueryInput.value.trim();
+            const imageFile = imageUploadInput.files[0];
+            let data = {};
+            
+            if (imageFile) {
+                if (imageFile.size > 5 * 1024 * 1024) { 
+                    displayMessage("O arquivo é muito grande (máx 5MB).", 'error');
+                    return;
+                }
+                const dataUrl = await fileToDataURL(imageFile);
+                data.query_type = 'image';
+                data.query_value = dataUrl;
+            } else if (textQuery) {
+                data.query_type = 'text';
+                data.query_value = textQuery;
+            } else {
+                displayMessage("Digite um termo ou selecione uma imagem.", 'info');
+                return;
+            }
+
+            setLoading(true);
+            resultsGrid.innerHTML = '';
+            resultsTitle.classList.add('hidden');
+            loadMoreContainer.classList.add('hidden');
+            noResultsMessage.textContent = 'Processando busca...';
+            noResultsMessage.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    displayResults(result.results);
+                } else {
+                    displayMessage(result.message || 'Erro na busca.', 'error');
+                }
+            } catch (error) {
+                displayMessage(`Erro no servidor: ${error.message}`, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // --- Event Listeners ---
+
+        imageUploadInput.addEventListener('change', () => {
+            textQueryInput.value = '';
+            if (imageUploadInput.files.length > 0) {
+                imagePreviewArea.classList.remove('hidden');
+                imagePreviewArea.innerHTML = `<span class="font-semibold text-primary">Imagem Selecionada:</span> ${imageUploadInput.files[0].name}`;
+            } else {
+                 imagePreviewArea.classList.add('hidden');
+            }
+        });
+
+        textQueryInput.addEventListener('input', () => {
+            if (textQueryInput.value.trim() !== '') {
+                imageUploadInput.value = '';
+                imagePreviewArea.classList.add('hidden');
+            }
+        });
+
+        textQueryInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') handleSearch();
+        });
+
+        window.onload = () => {
+            const initialStatus = '{{ status }}';
+            const totalItems = parseInt('{{ total_items }}');
+            updateStatusBar(initialStatus, totalItems);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+Flask
+torch
+torchvision
+transformers
+faiss-cpu
+numpy
+Pillow
+tqdm
