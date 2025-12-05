@@ -58,19 +58,19 @@ flowchart LR
 
 O sistema apresenta um dashboard limpo, indicando o status da indexação e oferecendo as duas modalidades de busca.
 
-![Tela Inicial](.\static\demo\inicial.png)
+![Tela Inicial](/static/demo/inicial.png)
 
 ### 2. Busca Textual (Contexto)
 
 Exemplo de busca por termos específicos como "Estilo Colonial". O modelo compreende as características arquitetônicas (telhados, colunas, cores) sem que a palavra "colonial" precise estar no nome do arquivo.
 
-![Busca por Texto](.\static\demo\text_colonial.png)
+![Busca por Texto](/static/demo/text_colonial.png)
 
 ### 3. Busca por Similaridade de Imagem
 
 Exemplo utilizando uma imagem de referência de uma "Cabana". O algoritmo identifica padrões de forma, textura e composição para retornar projetos similares do acervo.
 
-![Busca por Imagem](.\static\demo\img_cabana.png)
+![Busca por Imagem](/static/demo/img_cabana.png)
 
 ## Funcionalidades
 
