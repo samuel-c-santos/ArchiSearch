@@ -57,6 +57,7 @@ flowchart LR
 ### 1. Interface Inicial
 
 O sistema apresenta um dashboard limpo, indicando o status da indexação e oferecendo as duas modalidades de busca.
+![Tela Inicial (antes da indexação)](/static/demo/indexando.png)
 
 ![Tela Inicial](/static/demo/inicial.png)
 
