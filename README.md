@@ -2,13 +2,13 @@
 
 ## Contexto e Motivação
 
-Minha trajetória profissional iniciou-se como Técnico em Edificações, atuando na modelagem de projetos arquitetônicos e suporte a engenharia civil. Ao longo dos anos, acumulei uma biblioteca pessoal de referências visuais com milhares de arquivos.
+Minha carreira profissional começou em uma área um pouco distante da programação: fui Técnico em Edificações. Na maior parte do tempo, eu desenhava projetos arquitetônicos para engenheiros civis. Nesse processo, acumulei uma enorme biblioteca pessoal de referências visuais com milhares de imagens.
 
-Contudo, a organização tradicional de arquivos em pastas revelou-se ineficiente para a natureza fluida da arquitetura. Uma única imagem de uma fachada pode conter elementos que se enquadram simultaneamente em "Casas de Campo", "Estilo Colonial", "Uso de Madeira" e "Jardins Verticais". Categorizá-la em uma única pasta limitava sua descoberta futura.
+Com o tempo, ficou mais difícil encontrar uma imagem específica na minha própria biblioteca do que na internet. Uma foto na pasta "Fachadas" pode ser simultaneamente: casa de campo, estilo colonial, com muita madeira, com pergolado, com jardim vertical, etc. Se eu a colocasse em apenas uma pasta, eu teria que procurar em todas, pois nunca saberia onde realmente encontrar.
 
-Frequentemente, ao iniciar um novo projeto, eu enfrentava um paradoxo: possuía a referência exata armazenada localmente, mas a dificuldade de encontrá-la era tamanha que se tornava mais rápido realizar uma nova busca genérica na web. O ativo intelectual que eu havia curado estava inacessível devido à rigidez do sistema de arquivos.
+Foi unindo essa necessidade com o que eu faço hoje (Ciência de dados e Desenvolvimento de Sistemas) que nasceu a ideia do deste projeto.
 
-Unindo esta demanda à minha atuação atual em Análise de Dados, Geoprocessamento e Desenvolvimento de Sistemas, desenvolvi o **ArchiSearch**. Este projeto aplica inteligência artificial para romper a barreira da busca por nome de arquivo, permitindo localizar referências locais através de contexto semântico e similaridade visual.
+Este é um projeto que usei inteligência artificial para quebrar essa barreira. Ele me permite encontrar minhas referências locais através do contexto semântico e da similaridade visual. Um trabalho que fiz com muito carinho para resolver um problema real do meu passado.
 
 ## Como Funciona
 
